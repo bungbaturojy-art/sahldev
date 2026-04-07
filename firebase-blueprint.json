@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Biodata lengkap santri",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nama Lengkap" },
+        "nis": { "type": "string", "description": "Nomor Induk Santri" },
+        "level": { "type": "string", "enum": ["IL", "MTW", "TSN", "MAL"], "description": "Jenjang Pendidikan" },
+        "class": { "type": "string", "description": "Kelas (misal: 1, 2, 3)" },
+        "dorm": { "type": "string", "description": "Nama Kamar Asrama" },
+        "musyrif": { "type": "string", "description": "Nama Musyrif (Wali Kamar)" },
+        "currentPoints": { "type": "integer", "description": "Akumulasi Poin Kedisiplinan Saat Ini" },
+        "status": { "type": "string", "enum": ["Active", "Graduated", "Inactive"], "description": "Status Santri" }
+      },
+      "required": ["name", "nis", "level", "class", "currentPoints"]
+    },
+    "PointCatalog": {
+      "title": "Point Catalog",
+      "description": "Katalog Poin Prestasi dan Pelanggaran",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Nama Prestasi/Pelanggaran" },
+        "points": { "type": "integer", "description": "Bobot Poin (positif untuk prestasi, negatif untuk pelanggaran)" },
+        "category": { "type": "string", "enum": ["Prestasi", "Pelanggaran"], "description": "Kategori Poin" }
+      },
+      "required": ["title", "points", "category"]
+    },
+    "PointLog": {
+      "title": "Point Log",
+      "description": "Catatan Pelanggaran atau Prestasi Santri",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "description": "ID Santri" },
+        "catalogId": { "type": "string", "description": "ID Katalog Poin" },
+        "points": { "type": "integer", "description": "Poin yang diberikan" },
+        "description": { "type": "string", "description": "Kronologi Kejadian" },
+        "date": { "type": "string", "format": "date-time", "description": "Tanggal Kejadian" },
+        "staffId": { "type": "string", "description": "ID Staf yang menginput" },
+        "levelAtTime": { "type": "string", "description": "Jenjang saat poin didapat" },
+        "isArchived": { "type": "boolean", "description": "Status Arsip (Read-Only)" }
+      },
+      "required": ["studentId", "points", "date", "levelAtTime"]
+    }
+  },
+  "firestore": {
+    "/students": {
+      "schema": "Student",
+      "description": "Koleksi data santri"
+    },
+    "/pointCatalog": {
+      "schema": "PointCatalog",
+      "description": "Koleksi katalog poin"
+    },
+    "/pointLogs": {
+      "schema": "PointLog",
+      "description": "Koleksi log poin kedisiplinan"
+    }
+  }
+}

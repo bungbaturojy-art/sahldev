@@ -1,0 +1,108 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: students
+// Document ID: auto-generated
+// Fields:
+//   - name: string (required)
+//   - nis: string (required)
+//   - level: string (required, enum: IL, MTW, TSN, MAL)
+//   - class: string (required)
+//   - dorm: string (optional)
+//   - musyrif: string (optional)
+//   - currentPoints: number (required)
+//   - status: string (required, enum: Active, Graduated, Inactive)
+//
+// Collection: pointCatalog
+// Document ID: auto-generated
+// Fields:
+//   - title: string (required)
+//   - points: number (required)
+//   - category: string (required, enum: Prestasi, Pelanggaran)
+//
+// Collection: pointLogs
+// Document ID: auto-generated
+// Fields:
+//   - studentId: string (required)
+//   - catalogId: string (optional)
+//   - points: number (required)
+//   - description: string (optional)
+//   - date: timestamp (required)
+//   - staffId: string (optional)
+//   - levelAtTime: string (required)
+//   - isArchived: bool (required)
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+          (request.auth.token.email == "suyonoalfajar@gmail.com"));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidStudent(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.nis is string && data.nis.size() > 0 && data.nis.size() < 20 &&
+             data.level in ['IL', 'MTW', 'TSN', 'MAL'] &&
+             data.class is string &&
+             data.currentPoints is number &&
+             data.status in ['Active', 'Graduated', 'Inactive'];
+    }
+
+    function isValidPointLog(data) {
+      return data.studentId is string &&
+             data.points is number &&
+             data.date is timestamp &&
+             data.levelAtTime in ['IL', 'MTW', 'TSN', 'MAL'] &&
+             data.isArchived is bool;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /students/{studentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidStudent(request.resource.data);
+      allow update: if isAuthenticated() && isValidStudent(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /pointCatalog/{catalogId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /pointLogs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidPointLog(request.resource.data);
+      allow update: if isAuthenticated() && isValidPointLog(request.resource.data) && (resource.data.isArchived == false || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}
